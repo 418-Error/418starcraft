@@ -44,12 +44,6 @@ func (m *Quatrevm) GrepDir(ctx context.Context, directoryArg *dagger.Directory) 
 //     -vga qxl -device virtio-serial-pci -spice port=5930,disable-ticketing=on -device virtserialport,chardev=spicechannel0,name=com.redhat.spice.0 -chardev spicevmc,id=spicechannel0,name=vdagent
 
 func (m *Quatrevm) Run(ctx context.Context, directoryArg *dagger.Directory) *dagger.Service {
-	base, err := directoryArg.Name(ctx)
-	if err != nil {
-		panic(err)
-	}
-	disk := base + "/winxp.img"
-	// cdrom := base + "/winxp.iso"
 	return dag.Container().
 		From("ubuntu:16.04").
 		WithMountedDirectory("/mnt", directoryArg).
@@ -62,7 +56,7 @@ func (m *Quatrevm) Run(ctx context.Context, directoryArg *dagger.Directory) *dag
 		AsService(dagger.ContainerAsServiceOpts{Args: []string{
 			"qemu-system-x86_64",
 			"--enable-kvm",
-			"-hda", disk,
+			"-hda", "/mnt/winxp.img",
 			"-m", "6144",
 			"-net", "user",
 			// "-cdrom", cdrom,
