@@ -59,7 +59,8 @@ func (m *Quatrevm) Run(ctx context.Context, directoryArg *dagger.Directory) *dag
 		[]string{"apt-get", "update", "-y"},
 	).WithExec(
 		[]string{"apt-get", "install", "qemu", "-y"}, // We hope it gets cached
-	).AsService(dagger.ContainerAsServiceOpts{Args: []string{
+	).WithExposedPort(5930).
+		AsService(dagger.ContainerAsServiceOpts{Args: []string{
 			"qemu-system-x86_64",
 			"--enable-kvm",
 			"-hda", disk,
