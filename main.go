@@ -37,7 +37,20 @@ func (m *Quatrevm) GrepDir(ctx context.Context, directoryArg *dagger.Directory) 
 		Stdout(ctx)
 }
 
+// qemu-system-x86_64 --enable-kvm -hda /home/mathias/vm/winxp.img -m 6144 \
+//     -net user -cdrom /home/mathias/vm/winxp.iso -boot d \
+//     -rtc base=localtime,clock=host -smp cores=4,threads=4 \
+//     -usb -device usb-tablet \
+//     -net user,smb=$HOME \
+//     -vga qxl -device virtio-serial-pci -spice port=5930,disable-ticketing=on -device virtserialport,chardev=spicechannel0,name=com.redhat.spice.0 -chardev spicevmc,id=spicechannel0,name=vdagent
+
 func (m *Quatrevm) Run(ctx context.Context, directoryArg *dagger.Directory) *dagger.Service {
+	base, err := directoryArg.Name(ctx)
+	if err != nil {
+		panic(err)
+	}
+	disk := base + "/winxp.qcow2"
+	cdrom := base + "/winxp.iso"
 	return dag.Container().
 		From("ubuntu:16.04").
 		WithMountedDirectory("/mnt", directoryArg).
@@ -46,11 +59,25 @@ func (m *Quatrevm) Run(ctx context.Context, directoryArg *dagger.Directory) *dag
 		[]string{"apt-get", "update", "-y"},
 	).WithExec(
 		[]string{"apt-get", "install", "qemu", "-y"}, // We hope it gets cached
-	).WithExec(
-		[]string{"qemu-system-i386", "-hda", "winxp.img", "-cdrom", "STARCRAFT.ISO", "-cpu", "pentium3", "-m", "512", "-vga", "cirrus", "-net", "nic,model=pcnet", "-net", "user"}, dagger.ContainerWithExecOpts{
-			InsecureRootCapabilities: true,
-		},
-	).AsService(dagger.ContainerAsServiceOpts{Args: []string{"python", "-m", "http.server", "8080"}})
+	).AsService(dagger.ContainerAsServiceOpts{Args: []string{
+			"qemu-system-x86_64",
+			"--enable-kvm",
+			"-hda", disk,
+			"-m", "6144",
+			"-net", "user",
+			"-cdrom", cdrom,
+			"-boot", "d",
+			"-rtc", "base=localtime,clock=host",
+			"-smp", "cores=4,threads=4",
+			"-usb",
+			"-device", "usb-tablet",
+			"-net", "user,smb=$HOME",
+			"-vga", "qxl",
+			"-device", "virtio-serial-pci",
+			"-spice", "port=5930,disable-ticketing=on",
+			"-device", "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0",
+			"-chardev", "spicevmc,id=spicechannel0,name=vdagent",
+		},InsecureRootCapabilities: true})
 
 
 }
