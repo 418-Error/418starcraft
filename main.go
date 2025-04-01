@@ -21,7 +21,6 @@ import (
 
 type Quatrevm struct{}
 
-
 // Returns a container that echoes whatever string argument is provided
 func (m *Quatrevm) ContainerEcho(stringArg string) *dagger.Container {
 	return dag.Container().From("alpine:latest").WithExec([]string{"echo", stringArg})
@@ -49,15 +48,15 @@ func (m *Quatrevm) Run(ctx context.Context, directoryArg *dagger.Directory) *dag
 	if err != nil {
 		panic(err)
 	}
-	disk := base + "/winxp.qcow2"
-	cdrom := base + "/winxp.iso"
+	disk := base + "/winxp.img"
+	// cdrom := base + "/winxp.iso"
 	return dag.Container().
 		From("ubuntu:16.04").
 		WithMountedDirectory("/mnt", directoryArg).
 		WithWorkdir("/mnt").
 		WithExec(
-		[]string{"apt-get", "update", "-y"},
-	).WithExec(
+			[]string{"apt-get", "update", "-y"},
+		).WithExec(
 		[]string{"apt-get", "install", "qemu", "-y"}, // We hope it gets cached
 	).WithExposedPort(5930).
 		AsService(dagger.ContainerAsServiceOpts{Args: []string{
@@ -66,20 +65,17 @@ func (m *Quatrevm) Run(ctx context.Context, directoryArg *dagger.Directory) *dag
 			"-hda", disk,
 			"-m", "6144",
 			"-net", "user",
-			"-cdrom", cdrom,
+			// "-cdrom", cdrom,
 			"-boot", "d",
 			"-rtc", "base=localtime,clock=host",
-			"-smp", "cores=4,threads=4",
+			"-smp", "cores=1,threads=1",
 			"-usb",
 			"-device", "usb-tablet",
-			"-net", "user,smb=$HOME",
 			"-vga", "qxl",
 			"-device", "virtio-serial-pci",
 			"-spice", "port=5930,disable-ticketing=on",
 			"-device", "virtserialport,chardev=spicechannel0,name=com.redhat.spice.0",
 			"-chardev", "spicevmc,id=spicechannel0,name=vdagent",
-		},InsecureRootCapabilities: true})
-
+		}, InsecureRootCapabilities: true})
 
 }
-
